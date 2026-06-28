@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import '../widgets/calc_button.dart';
 
 class StandardMathpad extends StatelessWidget {
-  const StandardMathpad({super.key});
+  final bool isCompact;
+  final void Function(String) onButtonPressed;
+
+  const StandardMathpad({
+    super.key,
+    required this.isCompact,
+    required this.onButtonPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +40,10 @@ class StandardMathpad extends StatelessWidget {
       mainAxisSpacing: 8,
       crossAxisSpacing: 8,
       children: buttons
-          .map((label) => CalcButton(label: label, onTap: () {}))
+          .map(
+            (label) =>
+                CalcButton(label: label, onTap: () => onButtonPressed(label)),
+          )
           .toList(),
     );
   }

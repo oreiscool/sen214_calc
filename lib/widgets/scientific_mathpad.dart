@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import '../widgets/calc_button.dart';
 
 class ScientificMathpad extends StatefulWidget {
-  const ScientificMathpad({super.key});
+  final bool isCompact;
+  final void Function(String) onButtonPressed;
+
+  const ScientificMathpad({
+    super.key,
+    required this.isCompact,
+    required this.onButtonPressed,
+  });
 
   @override
   State<ScientificMathpad> createState() => _ScientificMathpadState();
@@ -61,7 +68,11 @@ class _ScientificMathpadState extends State<ScientificMathpad> {
         final displayLabel = label == 'RAD_TOGGLE'
             ? (_isRad ? 'Rad' : 'Deg')
             : label;
-        return CalcButton(label: displayLabel, onTap: () {});
+        return CalcButton(
+          label: displayLabel,
+          isCompact: widget.isCompact,
+          onTap: () => widget.onButtonPressed(displayLabel),
+        );
       }).toList(),
     );
   }
