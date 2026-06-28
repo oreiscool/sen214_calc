@@ -1,0 +1,40 @@
+import 'package:flutter/material.dart';
+import '../widgets/calc_button.dart';
+
+class StandardMathpad extends StatelessWidget {
+  const StandardMathpad({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final buttons = [
+      'AC',
+      'DEL',
+      '%',
+      '÷',
+      '7',
+      '8',
+      '9',
+      '×',
+      '4',
+      '5',
+      '6',
+      '-',
+      '1',
+      '2',
+      '3',
+      '+',
+      '()',
+      '0',
+      '.',
+      '=',
+    ];
+    return GridView.count(
+      crossAxisCount: 4,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: buttons
+          .map((label) => CalcButton(label: label, onTap: () {}))
+          .toList(),
+    );
+  }
+}
