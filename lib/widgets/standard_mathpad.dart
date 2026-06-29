@@ -41,8 +41,11 @@ class StandardMathpad extends StatelessWidget {
       crossAxisSpacing: 8,
       children: buttons
           .map(
-            (label) =>
-                CalcButton(label: label, onTap: () => onButtonPressed(label)),
+            (label) => CalcButton(
+              label: label,
+              onTap: () => onButtonPressed(label),
+              isCompact: isCompact,
+            ),
           )
           .toList(),
     );
