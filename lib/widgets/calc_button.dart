@@ -27,7 +27,10 @@ class CalcButton extends StatelessWidget {
         ),
 
         child: Center(
-          child: Text(label, style: TextStyle(color: textColor)),
+          child: Text(
+            label,
+            style: TextStyle(color: textColor, fontSize: isCompact ? 8 : 16),
+          ),
         ),
       ),
     );
