@@ -19,24 +19,20 @@ class CalcButton extends StatefulWidget {
 class _CalcButtonState extends State<CalcButton> {
   bool _isPressed = false;
 
-  static const _backgroundColor = Color(0xFF222222);
-  static const _operatorColor = Color(0xFFFF9800);
-  static const _errorColor = Color(0xFFF44336);
-  static const _numberColor = Color(0xFFEEEEEE);
-
-  Color _getTextColor() {
+  Color _getTextColor(ColorScheme colors) {
     final label = widget.label;
-    if (label == 'AC' || label == 'DEL') return _errorColor;
+    if (label == 'AC' || label == 'DEL') return colors.error;
     if (label == '+' || label == '-' || label == '×' || label == '÷') {
-      return _operatorColor;
+      return colors.primary;
     }
-    return _numberColor;
+    return colors.onSurface;
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final isEquals = widget.label == '=';
-    final textColor = isEquals ? _backgroundColor : _getTextColor();
+    final textColor = isEquals ? colors.surface : _getTextColor(colors);
     final isCompact = widget.isCompact;
 
     return GestureDetector(
@@ -54,7 +50,7 @@ class _CalcButtonState extends State<CalcButton> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: isEquals ? _operatorColor : _backgroundColor,
+            color: isEquals ? colors.primary : colors.surface,
             borderRadius: BorderRadius.circular(isCompact ? 24 : 100),
           ),
           child: Center(
