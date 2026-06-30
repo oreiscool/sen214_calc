@@ -33,7 +33,7 @@ class _HomepageState extends State<Homepage> {
         .replaceAll('/', '÷')
         .replaceAll('x', '×');
     
-    final allowedRegex = RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹P C∛a-zA-Z]');
+    final allowedRegex = RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprdbe]');
     sanitized = sanitized.split('').where((char) => allowedRegex.hasMatch(char)).join('');
     return sanitized;
   }
