@@ -13,41 +13,33 @@ class StandardMathpad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final buttons = [
-      'AC',
-      'DEL',
-      '%',
-      '÷',
-      '7',
-      '8',
-      '9',
-      '×',
-      '4',
-      '5',
-      '6',
-      '-',
-      '1',
-      '2',
-      '3',
-      '+',
-      '()',
-      '0',
-      '.',
-      '=',
+    final rows = [
+      ['AC', 'DEL', '%', '÷'],
+      ['7', '8', '9', '×'],
+      ['4', '5', '6', '-'],
+      ['1', '2', '3', '+'],
+      ['()', '0', '.', '='],
     ];
-    return GridView.count(
-      crossAxisCount: 4,
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: buttons
-          .map(
-            (label) => CalcButton(
-              label: label,
-              onTap: () => onButtonPressed(label),
-              isCompact: isCompact,
-            ),
-          )
-          .toList(),
+
+    return Column(
+      children: rows.map((row) {
+        return Expanded(
+          child: Row(
+            children: row.map((label) {
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: CalcButton(
+                    label: label,
+                    onTap: () => onButtonPressed(label),
+                    isCompact: isCompact,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      }).toList(),
     );
   }
 }
