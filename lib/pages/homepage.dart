@@ -274,10 +274,6 @@ class _HomepageState extends State<Homepage> {
         _isResultState = false;
       });
       _calculateLiveResult();
-    } else {
-      setState(() {
-        _inputExpression = _inputExpression;
-      });
     }
   }
 
