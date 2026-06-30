@@ -13,10 +13,6 @@ class ColorizingTextEditingController extends TextEditingController {
     this.showHighlight = false,
   });
 
-  void forceUpdate() {
-    notifyListeners();
-  }
-
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
@@ -32,8 +28,6 @@ class ColorizingTextEditingController extends TextEditingController {
     }
 
     final List<InlineSpan> children = [];
-
-    // Split by operators (+, -, ×, ÷)
     final regex = RegExp(r'([+\-×÷])');
     final parts = textVal.split(regex);
     final matches = regex.allMatches(textVal).toList();
@@ -76,6 +70,7 @@ class Display extends StatefulWidget {
 class _DisplayState extends State<Display> {
   late final ColorizingTextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -88,20 +83,34 @@ class _DisplayState extends State<Display> {
     _controller.text = widget.inputExpression;
     _controller.showHighlight = widget.showHighlight;
     _controller.addListener(_onTextChanged);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
   void didUpdateWidget(Display oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.showHighlight != oldWidget.showHighlight) {
+    final highlightChanged = widget.showHighlight != oldWidget.showHighlight;
+    final expressionChanged = widget.inputExpression != oldWidget.inputExpression;
+
+    if (highlightChanged) {
       _controller.showHighlight = widget.showHighlight;
-      _controller.forceUpdate();
     }
-    if (widget.inputExpression != _controller.text) {
+    if (expressionChanged) {
       _controller.text = widget.inputExpression;
-      // Force selection to jump to the end of the text on programmatic updates
       _controller.selection = TextSelection.collapsed(offset: widget.inputExpression.length);
     }
+    if (highlightChanged || expressionChanged) {
+      _controller.value = _controller.value;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   void _onTextChanged() {
@@ -115,6 +124,7 @@ class _DisplayState extends State<Display> {
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -124,47 +134,47 @@ class _DisplayState extends State<Display> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Scrollbar(
-          child: TextField(
-            controller: _controller,
-            focusNode: _focusNode,
-            readOnly: false,
-            showCursor: true,
-            keyboardType: TextInputType.none,
-            maxLines: 3,
-            textAlign: TextAlign.end,
-            cursorColor: colors.primary,
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(
-                RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹P C∛sincotalgprdbe]'),
+        Flexible(
+          child: Scrollbar(
+            controller: _scrollController,
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              scrollController: _scrollController,
+              showCursor: true,
+              keyboardType: TextInputType.none,
+              maxLines: 3,
+              textAlign: TextAlign.end,
+              cursorColor: colors.primary,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(
+                  RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprdbe]'),
+                ),
+              ],
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w400,
+                color: colors.onSurface,
               ),
-            ],
-            style: TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w400,
-              color: colors.onSurface,
-            ),
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 2),
-        AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 150),
+        const SizedBox(height: 4),
+        Text(
+          widget.resultString,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w500,
             color: colors.onSurface.withValues(alpha: 0.54),
-          ),
-          child: Text(
-            widget.resultString,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
