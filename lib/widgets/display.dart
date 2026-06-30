@@ -53,14 +53,18 @@ class Display extends StatefulWidget {
   final String inputExpression;
   final String resultString;
   final bool showHighlight;
+  final int cursorPosition;
   final ValueChanged<String> onChanged;
+  final ValueChanged<int>? onCursorChanged;
 
   const Display({
     super.key,
     required this.inputExpression,
     required this.resultString,
     required this.showHighlight,
+    required this.cursorPosition,
     required this.onChanged,
+    this.onCursorChanged,
   });
 
   @override
@@ -107,7 +111,9 @@ class _DisplayState extends State<Display> {
     }
     if (expressionChanged) {
       _controller.text = widget.inputExpression;
-      _controller.selection = TextSelection.collapsed(offset: widget.inputExpression.length);
+      _controller.selection = TextSelection.collapsed(
+        offset: widget.cursorPosition.clamp(0, widget.inputExpression.length),
+      );
     }
     if (highlightChanged || expressionChanged) {
       _controller.value = _controller.value;
@@ -152,6 +158,9 @@ class _DisplayState extends State<Display> {
               scrollController: _scrollController,
               selectionControls: _NoHandleControls(),
               showCursor: true,
+              onTap: () {
+                widget.onCursorChanged?.call(_controller.selection.baseOffset);
+              },
               keyboardType: TextInputType.none,
               maxLines: 3,
               textAlign: TextAlign.end,

@@ -19,6 +19,7 @@ class _HomepageState extends State<Homepage> {
   String _resultString = '';
   bool _showHighlight = false;
   bool _isResultState = false;
+  int _cursorPosition = 0;
 
   void _toggleCompact() {
     HapticFeedback.lightImpact();
@@ -135,6 +136,7 @@ class _HomepageState extends State<Homepage> {
         _resultString = '';
         _showHighlight = true;
         _isResultState = true;
+        _cursorPosition = resultText.length;
       });
     } catch (e) {
       _showSnackBar("Invalid Expression");
@@ -178,6 +180,7 @@ class _HomepageState extends State<Homepage> {
         _resultString = '';
         _showHighlight = false;
         _isResultState = false;
+        _cursorPosition = 1;
       });
       return;
     } 
@@ -187,27 +190,33 @@ class _HomepageState extends State<Homepage> {
         _showHighlight = false;
         _isResultState = false;
         if (_inputExpression.isNotEmpty && _inputExpression != '0') {
-          final tokens = [
-            'asinh(', 'acosh(', 'atanh(', 
-            'sinh(', 'cosh(', 'tanh(', 
-            'asin(', 'acos(', 'atan(', 
-            'sin(', 'cos(', 'tan(', 
-            'ln(', 'log(', '√(', '∛(', 
-            'abs(', '1÷(', 'e^('
-          ];
-          bool tokenDeleted = false;
-          for (final token in tokens) {
-            if (_inputExpression.endsWith(token)) {
-              _inputExpression = _inputExpression.substring(0, _inputExpression.length - token.length);
-              tokenDeleted = true;
-              break;
+          final pos = _cursorPosition.clamp(0, _inputExpression.length);
+          if (pos > 0) {
+            final tokens = [
+              'asinh(', 'acosh(', 'atanh(', 
+              'sinh(', 'cosh(', 'tanh(', 
+              'asin(', 'acos(', 'atan(', 
+              'sin(', 'cos(', 'tan(', 
+              'ln(', 'log(', '√(', '∛(', 
+              'abs(', '1÷(', 'e^('
+            ];
+            bool tokenDeleted = false;
+            for (final token in tokens) {
+              if (pos >= token.length && _inputExpression.substring(pos - token.length, pos) == token) {
+                _inputExpression = _inputExpression.substring(0, pos - token.length) + _inputExpression.substring(pos);
+                _cursorPosition = pos - token.length;
+                tokenDeleted = true;
+                break;
+              }
             }
-          }
-          if (!tokenDeleted) {
-            _inputExpression = _inputExpression.substring(0, _inputExpression.length - 1);
-          }
-          if (_inputExpression.isEmpty) {
-            _inputExpression = '0';
+            if (!tokenDeleted) {
+              _inputExpression = _inputExpression.substring(0, pos - 1) + _inputExpression.substring(pos);
+              _cursorPosition = pos - 1;
+            }
+            if (_inputExpression.isEmpty) {
+              _inputExpression = '0';
+              _cursorPosition = 1;
+            }
           }
         }
       });
@@ -232,22 +241,24 @@ class _HomepageState extends State<Homepage> {
     final isOperator = ['+', '-', '×', '÷', '%', '^', 'ⁿPᵣ', 'ⁿCᵣ'].contains(mappedValue);
     
     String nextExpr;
+    int nextCursorPos;
     if (_isResultState) {
       if (isOperator) {
         nextExpr = _inputExpression + mappedValue;
+        nextCursorPos = nextExpr.length;
       } else {
         nextExpr = mappedValue;
+        nextCursorPos = mappedValue.length;
       }
+    } else if (_inputExpression == '0') {
+      nextExpr = (isOperator || mappedValue == '.') ? _inputExpression + mappedValue : mappedValue;
+      nextCursorPos = nextExpr.length;
+    } else if (_cursorPosition < _inputExpression.length) {
+      nextExpr = _inputExpression.substring(0, _cursorPosition) + mappedValue + _inputExpression.substring(_cursorPosition);
+      nextCursorPos = _cursorPosition + mappedValue.length;
     } else {
-      if (_inputExpression == '0') {
-        if (isOperator || mappedValue == '.') {
-          nextExpr = _inputExpression + mappedValue;
-        } else {
-          nextExpr = mappedValue;
-        }
-      } else {
-        nextExpr = _inputExpression + mappedValue;
-      }
+      nextExpr = _inputExpression + mappedValue;
+      nextCursorPos = nextExpr.length;
     }
 
     String sanitized = sanitizeInput(nextExpr);
@@ -256,6 +267,7 @@ class _HomepageState extends State<Homepage> {
         _inputExpression = sanitized;
         _showHighlight = false;
         _isResultState = false;
+        _cursorPosition = sanitized.length == nextExpr.length ? nextCursorPos : sanitized.length;
       });
       _calculateLiveResult();
     }
@@ -272,6 +284,7 @@ class _HomepageState extends State<Homepage> {
         _inputExpression = sanitized;
         _showHighlight = false;
         _isResultState = false;
+        _cursorPosition = sanitized.length;
       });
       _calculateLiveResult();
     }
@@ -351,12 +364,16 @@ class _HomepageState extends State<Homepage> {
                 flex: 45,
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Display(
-                    inputExpression: _inputExpression,
-                    resultString: _resultString,
-                    showHighlight: _showHighlight,
-                    onChanged: _onDisplayChanged,
-                  ),
+                    child: Display(
+                      inputExpression: _inputExpression,
+                      resultString: _resultString,
+                      showHighlight: _showHighlight,
+                      cursorPosition: _cursorPosition,
+                      onChanged: _onDisplayChanged,
+                      onCursorChanged: (pos) {
+                        _cursorPosition = pos;
+                      },
+                    ),
                 ),
               ),
               Expanded(
