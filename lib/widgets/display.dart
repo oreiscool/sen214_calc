@@ -67,6 +67,13 @@ class Display extends StatefulWidget {
   State<Display> createState() => _DisplayState();
 }
 
+class _NoHandleControls extends MaterialTextSelectionControls {
+  @override
+  Widget buildHandle(BuildContext context, TextSelectionHandleType type, double textLineHeight, [VoidCallback? onTap]) {
+    return const SizedBox.shrink();
+  }
+}
+
 class _DisplayState extends State<Display> {
   late final ColorizingTextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
@@ -143,6 +150,7 @@ class _DisplayState extends State<Display> {
               controller: _controller,
               focusNode: _focusNode,
               scrollController: _scrollController,
+              selectionControls: _NoHandleControls(),
               showCursor: true,
               keyboardType: TextInputType.none,
               maxLines: 3,
