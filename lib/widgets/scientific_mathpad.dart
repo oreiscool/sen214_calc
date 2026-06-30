@@ -3,11 +3,13 @@ import '../widgets/calc_button.dart';
 
 class ScientificMathpad extends StatefulWidget {
   final bool isCompact;
+  final bool isRad;
   final void Function(String) onButtonPressed;
 
   const ScientificMathpad({
     super.key,
     required this.isCompact,
+    required this.isRad,
     required this.onButtonPressed,
   });
 
@@ -17,7 +19,6 @@ class ScientificMathpad extends StatefulWidget {
 
 class _ScientificMathpadState extends State<ScientificMathpad> {
   bool _isPage2 = false;
-  bool _isRad = true;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,7 @@ class _ScientificMathpadState extends State<ScientificMathpad> {
           child: Row(
             children: row.map((label) {
               final displayLabel = label == 'RAD_TOGGLE'
-                  ? (_isRad ? 'Rad' : 'Deg')
+                  ? (widget.isRad ? 'Rad' : 'Deg')
                   : label;
               return Expanded(
                 child: Padding(
@@ -59,8 +60,6 @@ class _ScientificMathpadState extends State<ScientificMathpad> {
                     onTap: () {
                       if (label == '⇋') {
                         setState(() => _isPage2 = !_isPage2);
-                      } else if (label == 'RAD_TOGGLE') {
-                        setState(() => _isRad = !_isRad);
                       }
                       widget.onButtonPressed(displayLabel);
                     },
