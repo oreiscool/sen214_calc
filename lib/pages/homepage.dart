@@ -28,26 +28,38 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  static const _allowedChars = {
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    '+', '-', '×', '÷', '%', '(', ')', '.', '^', '√', 'π', 'e',
+    '²', '³', 'ⁿ', '!', '⁻', '¹', 'P', 'ᵣ', 'C', '∛',
+    's', 'i', 'n', 'c', 'o', 't', 'a', 'l', 'g', 'p', 'r', 'h', 'd', 'b',
+  };
+
+  static const _operatorChars = {'+', '-', '×', '÷', '%', '^', '²', '³', '!', '√', '∛'};
+
   String sanitizeInput(String text) {
     String sanitized = text
         .replaceAll('*', '×')
         .replaceAll('/', '÷')
         .replaceAll('x', '×');
-    
-    final allowedRegex = RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprhdbe]');
-    sanitized = sanitized.split('').where((char) => allowedRegex.hasMatch(char)).join('');
+    sanitized = sanitized.split('').where((c) => _allowedChars.contains(c)).join('');
     return sanitized;
   }
   
   bool _validateAndAlert(String newExpr) {
-    // 1. Check operator count
-    final operatorRegex = RegExp(r'[+\-×÷%^²³!√∛]|nPr|nCr');
-    if (operatorRegex.allMatches(newExpr).length > 40) {
+    int opCount = 0;
+    for (int i = 0; i < newExpr.length; i++) {
+      if (_operatorChars.contains(newExpr[i])) opCount++;
+      if (i + 3 <= newExpr.length && (newExpr.substring(i, i + 3) == 'nPr' || newExpr.substring(i, i + 3) == 'nCr')) {
+        opCount++;
+        i += 2;
+      }
+    }
+    if (opCount > 40) {
       _showSnackBar("Exceeding 40 operators in the expression");
       return false;
     }
 
-    // 2. Check digit count per number
     final numberRegex = RegExp(r'[0-9.]+');
     for (final match in numberRegex.allMatches(newExpr)) {
       final numStr = match.group(0)!;
@@ -240,8 +252,40 @@ class _HomepageState extends State<Homepage> {
       return;
     }
 
+    if (value == '(-)') {
+      setState(() {
+        _showHighlight = false;
+        _isResultState = false;
+        if (_inputExpression == '0') {
+          _inputExpression = '-';
+          _cursorPosition = 1;
+        } else if (RegExp(r'^-?[0-9.]+$').hasMatch(_inputExpression)) {
+          if (_inputExpression.startsWith('-')) {
+            _inputExpression = _inputExpression.substring(1);
+          } else {
+            _inputExpression = '-$_inputExpression';
+          }
+          _cursorPosition = _inputExpression.length;
+        } else {
+          final pos = _cursorPosition.clamp(0, _inputExpression.length);
+          if (pos == _inputExpression.length && pos > 0 && RegExp(r'[×÷^%]').hasMatch(_inputExpression[pos - 1])) {
+            _inputExpression = '$_inputExpression(-';
+            _cursorPosition = _inputExpression.length;
+          } else {
+            _inputExpression = '${_inputExpression.substring(0, pos)}-${_inputExpression.substring(pos)}';
+            _cursorPosition = pos + 1;
+          }
+        }
+      });
+      _calculateLiveResult();
+      return;
+    }
+
     final mappedValue = value == '()' ? _handleParentheses() : _mapButtonValue(value);
+    final singleCharOps = ['+', '-', '×', '÷', '%', '^'];
     final isOperator = ['+', '-', '×', '÷', '%', '^', 'nPr', 'nCr'].contains(mappedValue);
+    final lastChar = _inputExpression.isNotEmpty ? _inputExpression[_inputExpression.length - 1] : '';
+    final endsWithOp = singleCharOps.contains(lastChar) && singleCharOps.contains(mappedValue);
     
     String nextExpr;
     int nextCursorPos;
@@ -256,6 +300,14 @@ class _HomepageState extends State<Homepage> {
     } else if (_inputExpression == '0') {
       nextExpr = (isOperator || mappedValue == '.') ? _inputExpression + mappedValue : mappedValue;
       nextCursorPos = nextExpr.length;
+    } else if (_cursorPosition == _inputExpression.length && endsWithOp) {
+      if (RegExp(r'[×÷^%]').hasMatch(lastChar) && mappedValue == '-') {
+        nextExpr = '$_inputExpression(-';
+        nextCursorPos = nextExpr.length;
+      } else {
+        nextExpr = _inputExpression.substring(0, _inputExpression.length - 1) + mappedValue;
+        nextCursorPos = nextExpr.length;
+      }
     } else if (_cursorPosition < _inputExpression.length) {
       nextExpr = _inputExpression.substring(0, _cursorPosition) + mappedValue + _inputExpression.substring(_cursorPosition);
       nextCursorPos = _cursorPosition + mappedValue.length;

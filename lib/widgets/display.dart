@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class ColorizingTextEditingController extends TextEditingController {
+class _OperatorColorController extends TextEditingController {
+  static const _ops = {'+', '-', '×', '÷'};
+
   final Color operatorColor;
   final Color normalColor;
   bool showHighlight;
 
-  ColorizingTextEditingController({
-    super.text,
+  _OperatorColorController({
+    String text = '',
     required this.operatorColor,
     required this.normalColor,
-    this.showHighlight = false,
-  });
+  })  : showHighlight = false,
+      super(text: text);
 
   @override
   TextSpan buildTextSpan({
@@ -27,18 +29,14 @@ class ColorizingTextEditingController extends TextEditingController {
       );
     }
 
-    final List<InlineSpan> children = [];
-    final regex = RegExp(r'[+\-×÷]');
-    final parts = textVal.split(RegExp(r'([+\-×÷])'));
-
-    for (int i = 0; i < parts.length; i++) {
-      final isOperator = regex.hasMatch(parts[i]);
+    final children = <InlineSpan>[];
+    for (int i = 0; i < textVal.length; i++) {
+      final c = textVal[i];
       children.add(TextSpan(
-        text: parts[i],
-        style: style?.copyWith(color: isOperator ? operatorColor : normalColor),
+        text: c,
+        style: style?.copyWith(color: _ops.contains(c) ? operatorColor : normalColor),
       ));
     }
-
     return TextSpan(style: style, children: children);
   }
 }
@@ -73,7 +71,7 @@ class _NoHandleControls extends MaterialTextSelectionControls {
 }
 
 class _DisplayState extends State<Display> {
-  late final ColorizingTextEditingController _controller;
+  late final _OperatorColorController _controller;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
@@ -81,7 +79,7 @@ class _DisplayState extends State<Display> {
   void initState() {
     super.initState();
     final colors = Theme.of(context).colorScheme;
-    _controller = ColorizingTextEditingController(
+    _controller = _OperatorColorController(
       operatorColor: colors.primary,
       normalColor: colors.onSurface,
     );

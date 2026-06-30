@@ -75,6 +75,7 @@ double _evalSubExpression(String expr, {bool isRad = true}) {
   temp = resolveHyperbolic(temp);
   temp = resolvePercents(temp);
   temp = resolveTrigMode(temp, isRad);
+  temp = resolveLogarithms(temp);
   GrammarParser p = GrammarParser();
   return RealEvaluator().evaluate(p.parse(temp)).toDouble();
 }
@@ -190,9 +191,9 @@ String resolveHyperbolic(String expr) {
   processed = replaceFunc(processed, 'asinh', (x) => 'ln(($x) + sqrt(($x)^2 + 1))');
   processed = replaceFunc(processed, 'acosh', (x) => 'ln(($x) + sqrt(($x)^2 - 1))');
   processed = replaceFunc(processed, 'atanh', (x) => '0.5 * ln((1 + ($x)) / (1 - ($x)))');
-  processed = replaceFunc(processed, 'sinh', (x) => '(e^($x) - e^(-$x)) / 2');
-  processed = replaceFunc(processed, 'cosh', (x) => '(e^($x) + e^(-$x)) / 2');
-  processed = replaceFunc(processed, 'tanh', (x) => '(e^($x) - e^(-$x)) / (e^($x) + e^(-$x))');
+  processed = replaceFunc(processed, 'sinh', (x) => '((e^($x)) - (e^(-$x))) / 2');
+  processed = replaceFunc(processed, 'cosh', (x) => '((e^($x)) + (e^(-$x))) / 2');
+  processed = replaceFunc(processed, 'tanh', (x) => '((e^($x)) - (e^(-$x))) / ((e^($x)) + (e^(-$x)))');
   
   return processed;
 }
@@ -202,6 +203,11 @@ String resolvePercents(String expr) {
   while (true) {
     int index = processed.indexOf('%');
     if (index == -1) break;
+
+    if (index + 1 < processed.length && RegExp(r'[0-9.(]').hasMatch(processed[index + 1])) {
+      processed = processed.replaceRange(index, index + 1, '~MOD~');
+      continue;
+    }
     
     if (index > 0 && processed[index - 1] == ')') {
       int closeCount = 1;
@@ -230,7 +236,39 @@ String resolvePercents(String expr) {
       processed = processed.replaceRange(start, index + 1, '(($numStr)/100)');
     }
   }
-  return processed;
+  return processed.replaceAll('~MOD~', '%');
+}
+
+String resolveLogarithms(String expr) {
+  String processed = expr;
+
+  int findMatchingParen(String text, int start) {
+    int openCount = 1;
+    for (int i = start; i < text.length; i++) {
+      if (text[i] == '(') openCount++;
+      if (text[i] == ')') openCount--;
+      if (openCount == 0) return i;
+    }
+    return -1;
+  }
+
+  while (true) {
+    int index = processed.indexOf('log(');
+    if (index == -1) break;
+
+    int closeIndex = findMatchingParen(processed, index + 4);
+    if (closeIndex == -1) break;
+
+    String inner = processed.substring(index + 4, closeIndex);
+    if (inner.contains(',')) {
+      processed = processed.replaceRange(index, index + 4, 'LOG_SKIP_');
+      continue;
+    }
+
+    processed = processed.replaceRange(index, closeIndex + 1, 'log(10,$inner)');
+  }
+
+  return processed.replaceAll('LOG_SKIP_', 'log(');
 }
 
 String resolveTrigMode(String expr, bool isRad) {
@@ -317,6 +355,21 @@ String resolveTrigMode(String expr, bool isRad) {
   return temp;
 }
 
+String _autoCloseParentheses(String expr) {
+  int open = 0;
+  for (int i = 0; i < expr.length; i++) {
+    if (expr[i] == '(') open++;
+    if (expr[i] == ')') open--;
+  }
+  if (open <= 0) return expr;
+
+  final last = expr[expr.length - 1];
+  if (RegExp(r'[+\-×÷^%,(]').hasMatch(last)) {
+    throw Exception("Incomplete expression");
+  }
+  return expr + ')' * open;
+}
+
 double evaluateExpression(String expr, bool isRad) {
   if (expr.isEmpty || expr == '0') return 0;
   
@@ -331,6 +384,9 @@ double evaluateExpression(String expr, bool isRad) {
       .replaceAll('⁻¹', '^(-1)')
       .replaceAll('ⁿ', '^');
   
+  // 1b. Auto-close unmatched parentheses for live preview
+  temp = _autoCloseParentheses(temp);
+  
   // 2. Pre-process complex structures
   temp = evaluateFactorials(temp, isRad: isRad);
   temp = evaluatePermutationsAndCombinations(temp);
@@ -341,6 +397,9 @@ double evaluateExpression(String expr, bool isRad) {
   
   // 3. Trigonometric Angle Mode Adjustments
   temp = resolveTrigMode(temp, isRad);
+
+  // 3b. Resolve single-argument log to base-10
+  temp = resolveLogarithms(temp);
   
   // 4. Evaluate with math_expressions
   GrammarParser p = GrammarParser();
