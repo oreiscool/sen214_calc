@@ -19,7 +19,7 @@ class _HomepageState extends State<Homepage> {
   String _resultString = '';
   bool _showHighlight = false;
   bool _isResultState = false;
-  int _cursorPosition = 0;
+  int _cursorPosition = 1;
 
   void _toggleCompact() {
     HapticFeedback.lightImpact();
@@ -41,7 +41,7 @@ class _HomepageState extends State<Homepage> {
   
   bool _validateAndAlert(String newExpr) {
     // 1. Check operator count
-    final operatorRegex = RegExp(r'[+\-×÷%^√∛]|ⁿPᵣ|ⁿCᵣ');
+    final operatorRegex = RegExp(r'[+\-×÷%^²³!√∛]|nPr|nCr');
     if (operatorRegex.allMatches(newExpr).length > 40) {
       _showSnackBar("Exceeding 40 operators in the expression");
       return false;
@@ -283,7 +283,7 @@ class _HomepageState extends State<Homepage> {
     'sin(', 'cos(', 'tan(',
     'ln(', 'log(', '√(', '∛(',
     'abs(', '1÷(', 'e^(', '2^(',
-    'n!', 'nPr', 'nCr',
+    'nPr', 'nCr',
   ];
 
   void _onDisplayChanged(String val) {
@@ -384,7 +384,7 @@ class _HomepageState extends State<Homepage> {
                       cursorPosition: _cursorPosition,
                       onChanged: _onDisplayChanged,
                       onCursorChanged: (pos) {
-                        _cursorPosition = pos;
+                        setState(() => _cursorPosition = pos);
                       },
                     ),
                 ),

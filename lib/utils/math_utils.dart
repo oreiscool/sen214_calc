@@ -3,11 +3,11 @@ import 'package:math_expressions/math_expressions.dart';
 double factorial(double n) {
   if (n < 0) throw ArgumentError("Factorial of negative number");
   int val = n.round();
-  double result = 1;
+  BigInt result = BigInt.one;
   for (int i = 2; i <= val; i++) {
-    result *= i;
+    result *= BigInt.from(i);
   }
-  return result;
+  return result.toDouble();
 }
 
 double permutations(double n, double r) {
@@ -20,17 +20,63 @@ double combinations(double n, double r) {
   return factorial(n) / (factorial(r) * factorial(n - r));
 }
 
-String evaluateFactorials(String expr) {
-  final regexNum = RegExp(r'([0-9.]+)!');
+String evaluateFactorials(String expr, {bool isRad = true}) {
   String processed = expr;
-  while (true) {
-    final match = regexNum.firstMatch(processed);
-    if (match == null) break;
-    double val = double.parse(match.group(1)!);
-    double factVal = factorial(val);
-    processed = processed.replaceFirst(match.group(0)!, factVal.toString());
+  while (processed.contains('!')) {
+    int bang = processed.indexOf('!');
+
+    String subExpr;
+    int replaceStart;
+    bool isParenGroup = bang > 0 && processed[bang - 1] == ')';
+
+    if (isParenGroup) {
+      int depth = 1;
+      int open = bang - 2;
+      while (open >= 0) {
+        if (processed[open] == ')') {
+          depth++;
+        } else if (processed[open] == '(') {
+          depth--;
+        }
+        if (depth == 0) break;
+        open--;
+      }
+      if (depth != 0) break;
+      subExpr = processed.substring(open + 1, bang - 1);
+      replaceStart = open;
+    } else {
+      int start = bang - 1;
+      while (start >= 0 && RegExp(r'[0-9.]').hasMatch(processed[start])) {
+        start--;
+      }
+      start++;
+      subExpr = processed.substring(start, bang);
+      replaceStart = start;
+    }
+
+    double val = _evalSubExpression(subExpr, isRad: isRad);
+    processed = processed.replaceRange(replaceStart, bang + 1, factorial(val).toString());
   }
   return processed;
+}
+
+double _evalSubExpression(String expr, {bool isRad = true}) {
+  String temp = expr
+      .replaceAll('×', '*')
+      .replaceAll('÷', '/')
+      .replaceAll('π', '3.141592653589793')
+      .replaceAll('√(', 'sqrt(')
+      .replaceAll('²', '^2')
+      .replaceAll('³', '^3');
+  temp = evaluateFactorials(temp, isRad: isRad);
+  temp = evaluatePermutationsAndCombinations(temp);
+  temp = resolveCubeRoots(temp);
+  temp = resolveSquareRoots(temp);
+  temp = resolveHyperbolic(temp);
+  temp = resolvePercents(temp);
+  temp = resolveTrigMode(temp, isRad);
+  GrammarParser p = GrammarParser();
+  return RealEvaluator().evaluate(p.parse(temp)).toDouble();
 }
 
 String evaluatePermutationsAndCombinations(String expr) {
@@ -62,23 +108,54 @@ String evaluatePermutationsAndCombinations(String expr) {
 String resolveCubeRoots(String expr) {
   String processed = expr;
   while (true) {
-    int index = processed.indexOf('∛(');
+    int index = processed.indexOf('∛');
     if (index == -1) break;
-    
-    int openCount = 1;
-    int closeIndex = -1;
-    for (int i = index + 2; i < processed.length; i++) {
-      if (processed[i] == '(') openCount++;
-      if (processed[i] == ')') openCount--;
-      if (openCount == 0) {
-        closeIndex = i;
-        break;
+
+    if (index + 1 < processed.length && processed[index + 1] == '(') {
+      int openCount = 1;
+      int closeIndex = -1;
+      for (int i = index + 2; i < processed.length; i++) {
+        if (processed[i] == '(') openCount++;
+        if (processed[i] == ')') openCount--;
+        if (openCount == 0) {
+          closeIndex = i;
+          break;
+        }
       }
+      if (closeIndex == -1) break;
+      String inner = processed.substring(index + 2, closeIndex);
+      processed = processed.replaceRange(index, closeIndex + 1, '(($inner)^(1/3))');
+    } else {
+      int end = index + 1;
+      while (end < processed.length && RegExp(r'[0-9.]').hasMatch(processed[end])) {
+        end++;
+      }
+      String numStr = processed.substring(index + 1, end);
+      processed = processed.replaceRange(index, end, '(($numStr)^(1/3))');
     }
-    if (closeIndex == -1) break;
-    
-    String inner = processed.substring(index + 2, closeIndex);
-    processed = processed.replaceRange(index, closeIndex + 1, '(($inner)^(1/3))');
+  }
+  return processed;
+}
+
+String resolveSquareRoots(String expr) {
+  String processed = expr;
+  while (true) {
+    int index = processed.indexOf('√');
+    if (index == -1) break;
+    if (processed.substring(index).startsWith('sqrt(')) {
+      index = processed.indexOf('√', index + 1);
+      if (index == -1) break;
+    }
+    int end = index + 1;
+    while (end < processed.length && RegExp(r'[0-9.]').hasMatch(processed[end])) {
+      end++;
+    }
+    if (end > index + 1) {
+      String numStr = processed.substring(index + 1, end);
+      processed = processed.replaceRange(index, end, 'sqrt($numStr)');
+    } else {
+      break;
+    }
   }
   return processed;
 }
@@ -251,12 +328,14 @@ double evaluateExpression(String expr, bool isRad) {
       .replaceAll('√(', 'sqrt(')
       .replaceAll('²', '^2')
       .replaceAll('³', '^3')
-      .replaceAll('^', '^');
+      .replaceAll('⁻¹', '^(-1)')
+      .replaceAll('ⁿ', '^');
   
   // 2. Pre-process complex structures
-  temp = evaluateFactorials(temp);
+  temp = evaluateFactorials(temp, isRad: isRad);
   temp = evaluatePermutationsAndCombinations(temp);
   temp = resolveCubeRoots(temp);
+  temp = resolveSquareRoots(temp);
   temp = resolveHyperbolic(temp);
   temp = resolvePercents(temp);
   

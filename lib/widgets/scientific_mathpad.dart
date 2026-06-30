@@ -60,8 +60,9 @@ class _ScientificMathpadState extends State<ScientificMathpad> {
                     onTap: () {
                       if (label == '⇋') {
                         setState(() => _isPage2 = !_isPage2);
+                      } else {
+                        widget.onButtonPressed(displayLabel);
                       }
-                      widget.onButtonPressed(displayLabel);
                     },
                   ),
                 ),

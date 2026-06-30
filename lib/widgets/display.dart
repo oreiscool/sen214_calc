@@ -28,21 +28,15 @@ class ColorizingTextEditingController extends TextEditingController {
     }
 
     final List<InlineSpan> children = [];
-    final regex = RegExp(r'([+\-×÷])');
-    final parts = textVal.split(regex);
-    final matches = regex.allMatches(textVal).toList();
+    final regex = RegExp(r'[+\-×÷]');
+    final parts = textVal.split(RegExp(r'([+\-×÷])'));
 
     for (int i = 0; i < parts.length; i++) {
+      final isOperator = regex.hasMatch(parts[i]);
       children.add(TextSpan(
         text: parts[i],
-        style: style?.copyWith(color: normalColor),
+        style: style?.copyWith(color: isOperator ? operatorColor : normalColor),
       ));
-      if (i < matches.length) {
-        children.add(TextSpan(
-          text: matches[i].group(0),
-          style: style?.copyWith(color: operatorColor),
-        ));
-      }
     }
 
     return TextSpan(style: style, children: children);
@@ -159,7 +153,8 @@ class _DisplayState extends State<Display> {
               selectionControls: _NoHandleControls(),
               showCursor: true,
               onTap: () {
-                widget.onCursorChanged?.call(_controller.selection.baseOffset);
+                final pos = _controller.selection.baseOffset.clamp(0, _controller.text.length);
+                widget.onCursorChanged?.call(pos);
               },
               keyboardType: TextInputType.none,
               maxLines: 3,
