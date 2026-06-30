@@ -27,18 +27,16 @@ class _CalcButtonState extends State<CalcButton> {
   Color _getTextColor() {
     final label = widget.label;
     if (label == 'AC' || label == 'DEL') return _errorColor;
-    if (RegExp(r'^[0-9]$').hasMatch(label) ||
-        label == '.' ||
-        label == '=' ||
-        label == '()') {
-      return _numberColor;
+    if (label == '+' || label == '-' || label == '×' || label == '÷') {
+      return _operatorColor;
     }
-    return _operatorColor;
+    return _numberColor;
   }
 
   @override
   Widget build(BuildContext context) {
-    final textColor = _getTextColor();
+    final isEquals = widget.label == '=';
+    final textColor = isEquals ? _backgroundColor : _getTextColor();
     final isCompact = widget.isCompact;
 
     return GestureDetector(
@@ -56,7 +54,7 @@ class _CalcButtonState extends State<CalcButton> {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           decoration: BoxDecoration(
-            color: _backgroundColor,
+            color: isEquals ? _operatorColor : _backgroundColor,
             borderRadius: BorderRadius.circular(isCompact ? 24 : 100),
           ),
           child: Center(
@@ -70,7 +68,7 @@ class _CalcButtonState extends State<CalcButton> {
                   style: TextStyle(
                     color: textColor,
                     fontSize: isCompact ? 20 : 28,
-                    fontWeight: FontWeight.w400,
+                    fontWeight: isEquals ? FontWeight.w600 : FontWeight.w400,
                   ),
                   child: Text(widget.label),
                 ),
