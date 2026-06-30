@@ -74,15 +74,17 @@ class Display extends StatefulWidget {
 }
 
 class _DisplayState extends State<Display> {
-  final ColorizingTextEditingController _controller = ColorizingTextEditingController(
-    operatorColor: const Color(0xFFFF9800), // Yellow/Amber operator accent
-    normalColor: Colors.white,
-  );
+  late final ColorizingTextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
+    final colors = Theme.of(context).colorScheme;
+    _controller = ColorizingTextEditingController(
+      operatorColor: colors.primary,
+      normalColor: colors.onSurface,
+    );
     _controller.text = widget.inputExpression;
     _controller.showHighlight = widget.showHighlight;
     _controller.addListener(_onTextChanged);
@@ -118,32 +120,31 @@ class _DisplayState extends State<Display> {
 
   @override
   Widget build(BuildContext context) {
-    final normalResultColor = Colors.white54;
+    final colors = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Input text field (scrolls, supports cursor selection, max 3 lines)
         Scrollbar(
           child: TextField(
             controller: _controller,
             focusNode: _focusNode,
-            readOnly: false, // Allow selection/paste
+            readOnly: false,
             showCursor: true,
-            keyboardType: TextInputType.none, // Hide system keyboard
+            keyboardType: TextInputType.none,
             maxLines: 3,
             textAlign: TextAlign.end,
-            cursorColor: const Color(0xFFFF9800),
+            cursorColor: colors.primary,
             inputFormatters: [
               FilteringTextInputFormatter.allow(
                 RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹P C∛sincotalgprdbe]'),
               ),
             ],
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w400,
-              color: Colors.white,
+              color: colors.onSurface,
             ),
             decoration: const InputDecoration(
               border: InputBorder.none,
@@ -152,14 +153,13 @@ class _DisplayState extends State<Display> {
             ),
           ),
         ),
-        const SizedBox(height: 2), // Padding spacing between input and output
-        // Result line (smaller font size than input, no default '0' placeholder)
+        const SizedBox(height: 2),
         AnimatedDefaultTextStyle(
           duration: const Duration(milliseconds: 150),
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w500,
-            color: normalResultColor,
+            color: colors.onSurface.withValues(alpha: 0.54),
           ),
           child: Text(
             widget.resultString,
