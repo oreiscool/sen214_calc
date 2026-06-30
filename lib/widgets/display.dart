@@ -167,7 +167,7 @@ class _DisplayState extends State<Display> {
               cursorColor: colors.primary,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(
-                  RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprdbe]'),
+                  RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprhdbe]'),
                 ),
               ],
               style: TextStyle(

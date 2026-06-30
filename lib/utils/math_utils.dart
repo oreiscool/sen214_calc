@@ -34,8 +34,8 @@ String evaluateFactorials(String expr) {
 }
 
 String evaluatePermutationsAndCombinations(String expr) {
-  final regexP = RegExp(r'([0-9.]+)ⁿPᵣ([0-9.]+)');
-  final regexC = RegExp(r'([0-9.]+)ⁿCᵣ([0-9.]+)');
+  final regexP = RegExp(r'([0-9.]+)nPr([0-9.]+)');
+  final regexC = RegExp(r'([0-9.]+)nCr([0-9.]+)');
   String processed = expr;
   
   while (true) {

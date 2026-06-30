@@ -34,7 +34,7 @@ class _HomepageState extends State<Homepage> {
         .replaceAll('/', '÷')
         .replaceAll('x', '×');
     
-    final allowedRegex = RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprdbe]');
+    final allowedRegex = RegExp(r'[0-9+\-×÷%().^√πe²³ⁿ!⁻¹PᵣC∛sincotalgprhdbe]');
     sanitized = sanitized.split('').where((char) => allowedRegex.hasMatch(char)).join('');
     return sanitized;
   }
@@ -96,6 +96,10 @@ class _HomepageState extends State<Homepage> {
       case 'x³': return '³';
       case 'xⁿ': return '^';
       case '(-)': return '-';
+      case 'n!': return '!';
+      case '2ˣ': return '2^(';
+      case 'ⁿPᵣ': return 'nPr';
+      case 'ⁿCᵣ': return 'nCr';
       default: return value;
     }
   }
@@ -192,22 +196,21 @@ class _HomepageState extends State<Homepage> {
         if (_inputExpression.isNotEmpty && _inputExpression != '0') {
           final pos = _cursorPosition.clamp(0, _inputExpression.length);
           if (pos > 0) {
-            final tokens = [
-              'asinh(', 'acosh(', 'atanh(', 
-              'sinh(', 'cosh(', 'tanh(', 
-              'asin(', 'acos(', 'atan(', 
-              'sin(', 'cos(', 'tan(', 
-              'ln(', 'log(', '√(', '∛(', 
-              'abs(', '1÷(', 'e^('
-            ];
+            final tokens = _tokenList();
             bool tokenDeleted = false;
             for (final token in tokens) {
-              if (pos >= token.length && _inputExpression.substring(pos - token.length, pos) == token) {
-                _inputExpression = _inputExpression.substring(0, pos - token.length) + _inputExpression.substring(pos);
-                _cursorPosition = pos - token.length;
-                tokenDeleted = true;
-                break;
+              int searchFrom = 0;
+              while ((searchFrom = _inputExpression.indexOf(token, searchFrom)) != -1) {
+                final tokenEnd = searchFrom + token.length;
+                if (pos > searchFrom && pos <= tokenEnd) {
+                  _inputExpression = _inputExpression.substring(0, searchFrom) + _inputExpression.substring(tokenEnd);
+                  _cursorPosition = searchFrom;
+                  tokenDeleted = true;
+                  break;
+                }
+                searchFrom++;
               }
+              if (tokenDeleted) break;
             }
             if (!tokenDeleted) {
               _inputExpression = _inputExpression.substring(0, pos - 1) + _inputExpression.substring(pos);
@@ -238,7 +241,7 @@ class _HomepageState extends State<Homepage> {
     }
 
     final mappedValue = value == '()' ? _handleParentheses() : _mapButtonValue(value);
-    final isOperator = ['+', '-', '×', '÷', '%', '^', 'ⁿPᵣ', 'ⁿCᵣ'].contains(mappedValue);
+    final isOperator = ['+', '-', '×', '÷', '%', '^', 'nPr', 'nCr'].contains(mappedValue);
     
     String nextExpr;
     int nextCursorPos;
@@ -272,6 +275,16 @@ class _HomepageState extends State<Homepage> {
       _calculateLiveResult();
     }
   }
+
+  List<String> _tokenList() => const [
+    'asinh(', 'acosh(', 'atanh(',
+    'sinh(', 'cosh(', 'tanh(',
+    'asin(', 'acos(', 'atan(',
+    'sin(', 'cos(', 'tan(',
+    'ln(', 'log(', '√(', '∛(',
+    'abs(', '1÷(', 'e^(', '2^(',
+    'n!', 'nPr', 'nCr',
+  ];
 
   void _onDisplayChanged(String val) {
     String sanitized = sanitizeInput(val);
